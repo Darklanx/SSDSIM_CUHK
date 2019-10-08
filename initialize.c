@@ -68,7 +68,8 @@ struct ssd_info *initiation(struct ssd_info *ssd, char *trace_file, char *add_na
     char buffer[300];
     struct parameter_value *parameters;
     FILE *fp = NULL;
-
+    ssd->write_avg_pad = 0;
+    ssd->read_avg_pad = 0;
     /*printf("input parameter file name:");
 	gets(ssd->parameterfilename);
  	strcpy_s(ssd->parameterfilename,16,"page.parameters");
@@ -558,6 +559,8 @@ struct parameter_value *load_parameters(char parameter_file[30]) {
             sscanf(buf + next_eql, "%d", &p->chip_channel[i]);
         } else if ((res_eql = strcmp(buf, "page-level erase")) == 0) {
             sscanf(buf + next_eql, "%d", &p->page_level_erase);
+        } else if ((res_eql = strcmp(buf, "pad_amount")) == 0) {
+            sscanf(buf + next_eql, "%lld", &p->pad_amount);
         } else {
             printf("don't match\t %s\n", buf);
         }

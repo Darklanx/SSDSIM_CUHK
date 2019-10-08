@@ -1,3 +1,6 @@
+parameter file: page.parameters_88_0
+trace file: hm_0.csv_899
+-----------------------parameter file----------------------
 #parameter file
 dram capacity = 0; #131074;     #the unit is B
 # 下面是在說每個channel有幾個chip
@@ -104,3 +107,43 @@ initial valid=1;
 valid ratio=0.2;  #注意貌似不能設定為1
 page-level erase=0;
 pad_amount=100000
+-----------------------simulation output----------------------
+chip:0,die:0,plane:0 have free page: 43015
+									OUTPUT
+****************** TRACE INFO ******************
+app_id      arrive           lsn     size ope     begin time    response time    process time
+the 0 channel, 0 chip, 0 die, 0 plane has :           989 erase operations
+the 0 channel, 1 chip, 0 die, 0 plane has :           989 erase operations
+
+
+---------------------------statistic data of page-level erase --------------------------
+min lsn:         34424
+max lsn:       8464930
+read count:        275269
+program count:        574742                        include the flash write count leaded by read requests
+the read operation leaded by un-covered update count:          9068
+erase count:          1973
+direct erase count:             0
+copy back count:             0
+multi-plane program count:             0
+multi-plane read count:             0
+interleave write count:             0
+interleave read count:             0
+interleave two plane and one program count:             0
+interleave two plane count:             0
+gc copy back count:             0
+write flash count:        317934
+interleave erase count:             0
+multiple plane erase count:             0
+interleave multiple plane erase count:             0
+read request count:           406
+write request count:           492
+read request average size:  11307.627930
+write request average size:   7321.294922
+read request average response time: 1103155 35218
+write request average response time: 436602 40173
+buffer read hits:             0
+buffer read miss:             0
+buffer write hits:             0
+buffer write miss:             0
+erase:          1978

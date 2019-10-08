@@ -7,7 +7,7 @@ Author: Hu Yang		Version: 2.1	Date:2011/12/02
 Description: 
 
 History:
-<contributor>     <time>        <version>       <desc>                   <e-mail>
+<contributor>     <tbime>        <version>       <desc>                   <e-mail>
 Yang Hu	        2009/09/25	      1.0		    Creat SSDsim       yanghu@foxmail.com
                 2010/05/01        2.x           Change 
 Zhiming Zhu     2011/07/01        2.0           Change               812839842@qq.com
@@ -166,6 +166,8 @@ struct ssd_info {
     unsigned int read_request_count; //�O��Ū�ާ@������
     int64_t write_avg; //�O���Ω�p��g�ШD�����T���ɶ����ɶ�
     int64_t read_avg; //�O���Ω�p��Ū�ШD�����T���ɶ����ɶ�
+    int64_t write_avg_pad;
+    int64_t read_avg_pad;
 
     //unsigned int min_lsn;
     //unsigned int max_lsn;
@@ -391,6 +393,8 @@ struct event_node {
 };
 
 struct parameter_value {
+    int64_t pad_amount; // for write & read avg padding
+
     unsigned int chip_num; //�O���@��SSD�����h�֭�����
     unsigned int dram_capacity; //�O��SSD��DRAM capacity
     unsigned int cpu_sdram; //�O���������h��

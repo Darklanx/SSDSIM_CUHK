@@ -17,6 +17,8 @@ Hao Luo         2011/01/01        2.0           Change               luohao13568
 *****************************************************************************************************************************/
 
 #include "ssd.h"
+#define min(x, y) (((x) < (y)) ? (x) : (y))
+#define max(x, y) (((x) > (y)) ? (x) : (y))
 
 int main(int argc, char *argv[]) {
     unsigned int i, j, k;
@@ -90,6 +92,7 @@ struct ssd_info *simulate(struct ssd_info *ssd) {
     fflush(ssd->outputfile);
 
     int i = 0;
+
     while (flag != 100) {
 
         flag = get_requests(ssd);
@@ -110,6 +113,17 @@ struct ssd_info *simulate(struct ssd_info *ssd) {
         process(ssd);
 
         trace_output(ssd);
+        int64_t threshold = ssd->parameter->pad_amount;
+        //printf("threshold: %lld\n", threshold);
+        if (ssd->write_avg >= threshold) {
+            //printf("larger\n");
+            ssd->write_avg_pad += (double)ssd->write_avg / threshold;
+            ssd->write_avg = ssd->write_avg % threshold;
+        }
+        if (ssd->read_avg >= threshold) {
+            ssd->read_avg_pad += (double)ssd->read_avg / threshold;
+            ssd->read_avg = ssd->read_avg % threshold;
+        }
 
         if (flag == 0 && ssd->request_queue == NULL) {
             flag = 100;
@@ -127,7 +141,8 @@ struct ssd_info *simulate(struct ssd_info *ssd) {
 *			-1: no request has been added
 *			1: add one request to list
 ********************************************************************************/
-int count_request = 0;
+int count_request
+    = 0;
 int get_requests(struct ssd_info *ssd) {
 
     char buffer[200];
@@ -774,10 +789,32 @@ void statistic_output(struct ssd_info *ssd) {
     fprintf(ssd->outputfile, "write request count: %13d\n", ssd->write_request_count);
     fprintf(ssd->outputfile, "read request average size: %13f\n", ssd->ave_read_size);
     fprintf(ssd->outputfile, "write request average size: %13f\n", ssd->ave_write_size);
-    if (ssd->read_request_count != 0)
-        fprintf(ssd->outputfile, "read request average response time: %lld\n", ssd->read_avg / ssd->read_request_count);
-    if (ssd->write_request_count != 0)
-        fprintf(ssd->outputfile, "write request average response time: %lld\n", ssd->write_avg / ssd->write_request_count);
+
+    if (ssd->read_request_count != 0) {
+        //fprintf(ssd->outputfile, "read request average response time: %lld\n", ssd->read_avg / ssd->read_request_count);
+        double read_avg_pad = (double)ssd->read_avg_pad / ssd->read_request_count;
+        double floating = read_avg_pad - (long long)read_avg_pad;
+        //printf("floating: %lf\n", floating);
+        long long tmp = (long long)(floating * min(ssd->parameter->pad_amount, 100000));
+        //printf("tmp: %lld\n", tmp);
+
+        tmp *= max(1, ssd->parameter->pad_amount / 100000);
+        //printf("tmp: %lld\n", tmp);
+        fprintf(ssd->outputfile, "read request average response time: %lld%lld\n", (long long)read_avg_pad, tmp + ssd->read_avg / ssd->read_request_count);
+    }
+    if (ssd->write_request_count != 0) {
+        //fprintf(ssd->outputfile, "write request average response time: %lld\n", ssd->write_avg / ssd->write_request_count);
+
+        double write_avg_pad = (double)ssd->write_avg_pad / ssd->write_request_count;
+        double floating = write_avg_pad - (long long)write_avg_pad;
+        //printf("floating: %lf\n", floating);
+        long long tmp = (long long)(floating * min(ssd->parameter->pad_amount, 100000));
+        //printf("tmp: %lld\n", tmp);
+
+        tmp *= max(1, ssd->parameter->pad_amount / 100000);
+        //printf("tmp: %lld\n", tmp);
+        fprintf(ssd->outputfile, "write request average response time: %lld%lld\n", (long long)write_avg_pad, tmp + ssd->write_avg / ssd->write_request_count);
+    }
     fprintf(ssd->outputfile, "buffer read hits: %13d\n", ssd->dram->buffer->read_hit);
     fprintf(ssd->outputfile, "buffer read miss: %13d\n", ssd->dram->buffer->read_miss_hit);
     fprintf(ssd->outputfile, "buffer write hits: %13d\n", ssd->dram->buffer->write_hit);
