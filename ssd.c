@@ -19,7 +19,37 @@ Hao Luo         2011/01/01        2.0           Change               luohao13568
 #include "ssd.h"
 #define min(x, y) (((x) < (y)) ? (x) : (y))
 #define max(x, y) (((x) > (y)) ? (x) : (y))
+void request_response_flush(struct ssd_info *ssd) {
+    FILE *read_response_file = ssd->read_response_file;
+    ssd->request_response_current = ssd->request_response_head;
+    FILE *write_response_file = ssd->write_response_file;
+    while (ssd->request_response_count != 0) {
+        struct request *req = ssd->request_response_current;
 
+        //printf("ope: %u\n", req->operation);
+        //printf("time: %lld\n", req->begin_time);
+        if (req->operation == 1) { // read
+            fprintf(read_response_file, "%lld, READ, %lld\n", req->begin_time, req->response_time);
+        } else if (req->operation == 0) { // write
+            fprintf(write_response_file, "%lld, WRITE, %lld\n", req->begin_time, req->response_time);
+            //printf("%lld\n", req->begin_time);
+        }
+        ssd->request_response_current = ssd->request_response_current->next_node;
+        ssd->request_response_count -= 1;
+    }
+    fflush(read_response_file);
+    fflush(write_response_file);
+    ssd->request_response_current = ssd->request_response_head;
+}
+void free_request_response(struct ssd_info *ssd) {
+    ssd->request_response_current = ssd->request_response_head;
+    int i = 0;
+    while (ssd->request_response_current != NULL) {
+        struct request *req = ssd->request_response_current;
+        ssd->request_response_current = ssd->request_response_current->next_node;
+        free(req);
+    }
+}
 int main(int argc, char *argv[]) {
     unsigned int i, j, k;
     struct ssd_info *ssd;
@@ -60,7 +90,7 @@ int main(int argc, char *argv[]) {
     ssd = simulate(ssd);
     statistic_output(ssd);
     /*	free_all_node(ssd);*/
-
+    free_request_response(ssd);
     printf("\n");
     printf("the simulation is completed!\n");
     //fflush(stdout);
@@ -109,10 +139,12 @@ struct ssd_info *simulate(struct ssd_info *ssd) {
                 no_buffer_distribute(ssd);
             }
         }
-
         process(ssd);
 
         trace_output(ssd);
+        if (ssd->request_response_head->operation != 0) {
+            exit(-1);
+        }
         int64_t threshold = ssd->parameter->pad_amount;
         //printf("threshold: %lld\n", threshold);
         if (ssd->write_avg >= threshold) {
@@ -185,7 +217,7 @@ int get_requests(struct ssd_info *ssd) {
 
     // UMASS format: IO # , Arrival Time (ns) , Device # , File Descriptor # , Access Type , Offset , Length
     int file_desc = 0;
-    char type[5];
+    char type[6];
 
     //sscanf(buffer, "%d %lld %d %d %s %d %d", &io_num, &time_tt, &device, &file_desc, &type, &lsn, &size);
 
@@ -200,6 +232,12 @@ int get_requests(struct ssd_info *ssd) {
     int64_t offset;
     int dump3;
     sscanf(buffer, "%d %lld %s %d %s %lld %d %d", &io_num, &time_tt, &dump, &dump2, &type, &offset, &size, &dump3);
+
+    if (feof(ssd->tracefile)) {
+        //printf("EOF\n");
+        request1 = NULL;
+        return 0;
+    }
 
     if (counter % 1000000 == 0) {
         printf("%d\n", counter);
@@ -248,6 +286,7 @@ int get_requests(struct ssd_info *ssd) {
     if (lsn > ssd->max_lsn)
         ssd->max_lsn = lsn;
     if (lsn < 0) {
+
         printf("lsn < 0, lsn: %d\n", lsn);
         //exit(-1);
     }
@@ -325,6 +364,12 @@ int get_requests(struct ssd_info *ssd) {
 
     if (ssd->request_queue == NULL) //The queue is empty
     {
+        /*
+        printf("req1: %lld\n", request1->begin_time);
+        if (ssd-> request_response_head == NULL)
+            ssd-> request_response_head = request1;
+        printf("ope:%u\n", ssd-> request_response_head->operation);
+        */
         ssd->request_queue = request1;
         ssd->request_tail = request1;
         ssd->request_queue_length++;
@@ -571,7 +616,7 @@ void trace_output(struct ssd_info *ssd) {
         wait_time = 0;
 
         if (req->response_time != 0) {
-
+            printf("This should not be shown\n");
             if (req->response_time - req->begin_time == 0) {
                 printf("the response time is 0?? \n");
                 getchar();
@@ -660,20 +705,31 @@ void trace_output(struct ssd_info *ssd) {
                     printf("the response time is 0?? \n");
                     getchar();
                 }
+                // HANDLE OUTPUT RESPONSE TIME
 
                 if (req->operation == READ) {
 
                     ssd->read_request_count++;
                     ssd->read_request_size += req->size;
                     ssd->read_avg = ssd->read_avg + (end_time - req->time);
+                    //printf("t: %lld\n", end_time - start_time);
+                    //req->response_time = end_time - req->time;
 
                 } else {
                     ssd->write_request_count++;
                     ssd->write_request_size += req->size;
                     ssd->write_avg = ssd->write_avg + (end_time - req->time);
+                    //printf("t: %lld\n", end_time - start_time);
+                    //req->response_time = end_time - req->time;
 
                     struct sub_request *sr = req->subs;
                 }
+                // handle request_response
+                ssd->request_response_current->response_time = end_time - req->time;
+                ssd->request_response_current->operation = req->operation;
+                ssd->request_response_current->begin_time = req->begin_time;
+                ssd->request_response_current = ssd->request_response_current->next_node;
+                ssd->request_response_count = ssd->request_response_count + 1;
 
                 while (req->subs != NULL) {
                     tmp = req->subs;
@@ -867,8 +923,11 @@ void statistic_output(struct ssd_info *ssd) {
     fflush(ssd->statisticfile);
 
     fclose(ssd->statisticfile);
-}
 
+    request_response_flush(ssd);
+    fclose(ssd->read_response_file);
+    fclose(ssd->write_response_file);
+}
 unsigned int size(unsigned int stored) {
     unsigned int i, total = 0, mask = 0x80000000;
 
