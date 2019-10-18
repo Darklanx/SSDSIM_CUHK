@@ -146,6 +146,7 @@ struct ac_time_characteristics {
 
 struct ssd_info {
     double ssd_energy; //SSD����ӡA�O�ɶ��M����ƪ����,��Ӧ]�l
+
     int time_scale;
     //int64_t current_time; //�O���Y�ήɶ�
     //int64_t next_request_time;
@@ -199,14 +200,20 @@ struct ssd_info {
     char outputfilename[30];
     char statisticfilename[30];
     char statisticfilename2[30];
-
+    char write_response_file_name[50];
+    char read_response_file_name[50];
     FILE *outputfile;
     FILE *tracefile;
     FILE *statisticfile;
     FILE *statisticfile2;
+    FILE *write_response_file;
+    FILE *read_response_file;
 
     struct parameter_value *parameter; //SSD�ѼƦ]�l
     struct dram_info *dram;
+    struct request *request_response_head;
+    struct request *request_response_current;
+    int request_response_count;
     struct request *request_queue; //dynamic request queue
     struct request *request_tail; // the tail of the request queue
     struct sub_request *subs_w_head; //���ĥΥ��ʺA���t�ɡA���t�O�����D���ӱ�������channel�W�A�ҥH�����bssd�W�A���i�Jprocess��Ʈɤ~���������channel��Ū�ШD���C�W

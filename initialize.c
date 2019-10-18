@@ -53,6 +53,23 @@ extern int freeFunc(TREE_NODE *pNode) {
     pNode = NULL;
     return 1;
 }
+void init_request_response(struct ssd_info *ssd) {
+    ssd->request_response_count = 0;
+    struct request *req = NULL;
+    // init head
+    ssd->request_response_head = (struct request *)malloc(sizeof(struct request));
+    alloc_assert(ssd->request_response_head, "request");
+    memset(ssd->request_response_head, 0, sizeof(struct request));
+    ssd->request_response_current = ssd->request_response_head;
+    for (int i = 0; i < 1000; i++) {
+        req = (struct request *)malloc(sizeof(struct request));
+        alloc_assert(req, "request");
+        memset(req, 0, sizeof(struct request));
+        ssd->request_response_current->next_node = req;
+        ssd->request_response_current = req;
+    }
+    ssd->request_response_current = ssd->request_response_head;
+}
 
 /**********   initiation   ******************
 *modify by zhouwen
@@ -70,6 +87,8 @@ struct ssd_info *initiation(struct ssd_info *ssd, char *trace_file, char *add_na
     FILE *fp = NULL;
     ssd->write_avg_pad = 0;
     ssd->read_avg_pad = 0;
+    ssd->request_response_head = NULL;
+    init_request_response(ssd);
     /*printf("input parameter file name:");
 	gets(ssd->parameterfilename);
  	strcpy_s(ssd->parameterfilename,16,"page.parameters");
@@ -111,6 +130,12 @@ struct ssd_info *initiation(struct ssd_info *ssd, char *trace_file, char *add_na
 
     sprintf(name, "stat2_%s_%s.%s", trace_file, add_name, time_scale);
     strncpy(ssd->statisticfilename2, name, 30);
+
+    sprintf(name, "read_response_%s_%s.%s", trace_file, add_name, time_scale);
+    strcpy(ssd->read_response_file_name, name);
+
+    sprintf(name, "write_response_%s_%s.%s", trace_file, add_name, time_scale);
+    strcpy(ssd->write_response_file_name, name);
 
     //����ssd�������ļ�
     //parameters = load_parameters(ssd->parameterfilename);
@@ -158,7 +183,6 @@ struct ssd_info *initiation(struct ssd_info *ssd, char *trace_file, char *add_na
     fprintf(ssd->outputfile, "trace file: %s\n", ssd->tracefilename);
     fprintf(ssd->statisticfile, "parameter file: %s\n", ssd->parameterfilename);
     fprintf(ssd->statisticfile, "trace file: %s\n", ssd->tracefilename);
-
     fflush(ssd->outputfile);
     fflush(ssd->statisticfile);
 
@@ -188,7 +212,8 @@ struct ssd_info *initiation(struct ssd_info *ssd, char *trace_file, char *add_na
     fflush(ssd->statisticfile);
 
     fclose(fp);
-
+    ssd->write_response_file = fopen(ssd->write_response_file_name, "w");
+    ssd->read_response_file = fopen(ssd->read_response_file_name, "w");
     printf("initiation is completed!\n");
 
     return ssd;
