@@ -20,6 +20,7 @@ Hao Luo         2011/01/01        2.0           Change               luohao13568
 #define min(x, y) (((x) < (y)) ? (x) : (y))
 #define max(x, y) (((x) > (y)) ? (x) : (y))
 void request_response_flush(struct ssd_info *ssd) {
+    //printf("flush\n");
     FILE *read_response_file = ssd->read_response_file;
     ssd->request_response_current = ssd->request_response_head;
     FILE *write_response_file = ssd->write_response_file;
@@ -140,11 +141,8 @@ struct ssd_info *simulate(struct ssd_info *ssd) {
             }
         }
         process(ssd);
-
         trace_output(ssd);
-        if (ssd->request_response_head->operation != 0) {
-            exit(-1);
-        }
+
         int64_t threshold = ssd->parameter->pad_amount;
         //printf("threshold: %lld\n", threshold);
         if (ssd->write_avg >= threshold) {
@@ -730,8 +728,9 @@ void trace_output(struct ssd_info *ssd) {
                 ssd->request_response_current->begin_time = req->begin_time;
                 ssd->request_response_current = ssd->request_response_current->next_node;
                 ssd->request_response_count = ssd->request_response_count + 1;
-                if (ssd->request_response_count == 999) {
+                if (ssd->request_response_count >= 600) {
                     request_response_flush(ssd);
+                    //printf("after count: %d\n", ssd->request_response_count);
                 }
                 while (req->subs != NULL) {
                     tmp = req->subs;
@@ -927,6 +926,7 @@ void statistic_output(struct ssd_info *ssd) {
     fclose(ssd->statisticfile);
 
     request_response_flush(ssd);
+    //printf("trace output flush?\n");
     fclose(ssd->read_response_file);
     fclose(ssd->write_response_file);
 }
