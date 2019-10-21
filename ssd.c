@@ -728,7 +728,8 @@ void trace_output(struct ssd_info *ssd) {
                 ssd->request_response_current->begin_time = req->begin_time;
                 ssd->request_response_current = ssd->request_response_current->next_node;
                 ssd->request_response_count = ssd->request_response_count + 1;
-                if (ssd->request_response_count >= 600) {
+                printf("response ocunt: %d\n", ssd->request_response_count);
+                if (ssd->request_response_count >= 900) {
                     request_response_flush(ssd);
                     //printf("after count: %d\n", ssd->request_response_count);
                 }
