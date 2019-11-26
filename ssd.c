@@ -615,6 +615,7 @@ void trace_output(struct ssd_info *ssd) {
 
         if (req->response_time != 0) {
             printf("This should not be shown\n");
+            exit(-1);
             if (req->response_time - req->begin_time == 0) {
                 printf("the response time is 0?? \n");
                 getchar();
@@ -723,12 +724,16 @@ void trace_output(struct ssd_info *ssd) {
                     struct sub_request *sr = req->subs;
                 }
                 // handle request_response
-                ssd->request_response_current->response_time = end_time - req->time;
+                // ssd->request_response_current->response_time = end_time - req->time;
+                ssd->request_response_current->response_time = end_time - start_time;
                 ssd->request_response_current->operation = req->operation;
                 ssd->request_response_current->begin_time = req->begin_time;
+                printf("begin: %lld\n", start_time);
+                printf("end: %lld\n", end_time);
+                printf("response: %lld\n\n", end_time - start_time);
                 ssd->request_response_current = ssd->request_response_current->next_node;
                 ssd->request_response_count = ssd->request_response_count + 1;
-                printf("response ocunt: %d\n", ssd->request_response_count);
+                //printf("response ocunt: %d\n", ssd->request_response_count);
                 if (ssd->request_response_count >= 900) {
                     request_response_flush(ssd);
                     //printf("after count: %d\n", ssd->request_response_count);
